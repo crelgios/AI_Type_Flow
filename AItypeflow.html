@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TypeFlow - Learn & Test Typing</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
+    :root { --bg1:#243b55; --bg2:#0f172a; --bg3:#020617; --text:#ffffff; --muted:#cbd5e1; --card:rgba(255,255,255,.1); --border:rgba(255,255,255,.18); --input:rgba(255,255,255,.08); --testBg:#ffffff; --testText:#111827; --testMuted:#b8bcc4; }
+    body.light { --bg1:#e0f2fe; --bg2:#f8fafc; --bg3:#ffffff; --text:#0f172a; --muted:#475569; --card:rgba(255,255,255,.75); --border:rgba(15,23,42,.12); --input:rgba(255,255,255,.9); --testBg:#ffffff; --testText:#111827; --testMuted:#b8bcc4; }
+    body.dark { --testBg:#0b1220; --testText:#e5e7eb; --testMuted:#64748b; }
+    body { min-height: 100vh; background: radial-gradient(circle at top, var(--bg1), var(--bg2) 55%, var(--bg3)); color: var(--text); overflow-x: hidden; transition: .3s; }
+    .theme-btn { position: fixed; top: 18px; right: 18px; z-index: 1000; width: 48px; height: 48px; border-radius: 50%; padding: 0; background: var(--card); color: var(--text); border: 1px solid var(--border); backdrop-filter: blur(12px); font-size: 20px; }
+    .page-transition { position: fixed; inset: 0; background: linear-gradient(135deg, #38bdf8, #8b5cf6, #ec4899); transform: scaleX(0); transform-origin: left; z-index: 999; transition: transform .55s ease; }
+    .page-transition.active { transform: scaleX(1); }
+    .stars { position: fixed; inset: 0; pointer-events: none; background-image: radial-gradient(currentColor 1px, transparent 1px); background-size: 42px 42px; opacity: .1; animation: moveStars 18s linear infinite; }
+    @keyframes moveStars { from { background-position: 0 0; } to { background-position: 250px 250px; } }
+    .container, .tool-page { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 30px 15px; text-align: center; position: relative; z-index: 1; }
+    .logo { width: 75px; height: 75px; border-radius: 50%; background: linear-gradient(135deg, #38bdf8, #8b5cf6); display: flex; align-items: center; justify-content: center; font-size: 34px; font-weight: bold; color:white; box-shadow: 0 0 35px rgba(56,189,248,.55); margin-bottom: 25px; animation: float 3s ease-in-out infinite; }
+    @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+    h1 { font-size: clamp(30px, 6vw, 58px); margin-bottom: 12px; }
+    .typing-text { font-size: clamp(17px, 3vw, 24px); color: var(--muted); min-height: 34px; margin-bottom: 30px; }
+    .typing-text span { border-right: 2px solid #38bdf8; padding-right: 5px; animation: blink .7s infinite; }
+    @keyframes blink { 50% { border-color: transparent; } }
+    .search-box { width: min(720px,100%); background: var(--card); backdrop-filter: blur(14px); border: 1px solid var(--border); border-radius: 24px; padding: 16px; display: flex; gap: 12px; box-shadow: 0 25px 70px rgba(0,0,0,.18); margin-bottom: 18px; }
+    
+    .search-box input, textarea { flex: 1; background: var(--input); border: 1px solid var(--border); outline: none; color: var(--text); font-size: 17px; padding: 14px; border-radius: 16px; resize: vertical; }
+    .search-box input::placeholder, textarea::placeholder { color: #94a3b8; }
+    button { border: none; border-radius: 16px; padding: 13px 20px; background: linear-gradient(135deg, #38bdf8, #8b5cf6); color: white; font-weight: bold; cursor: pointer; transition: .3s; }
+    button:hover { transform: scale(1.04); box-shadow: 0 0 18px rgba(139,92,246,.45); }
+    .options { width: min(920px,100%); display: grid; grid-template-columns: repeat(auto-fit, minmax(205px,1fr)); gap: 16px; }
+    .option-card, .time-card { padding: 22px; border-radius: 22px; background: var(--card); border: 1px solid var(--border); cursor: pointer; text-align: left; transition: .35s; overflow: hidden; }
+    .option-card:hover, .time-card:hover { transform: translateY(-8px); box-shadow: 0 18px 45px rgba(0,0,0,.18); }
+    .option-card h3, .time-card h3 { font-size: 19px; margin-bottom: 8px; }
+    .option-card p, .time-card p { color: var(--muted); font-size: 14px; line-height: 1.5; }
+    .tool-page { display: none; animation: fadeUp .7s ease; }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(30px); } to { opacity:1; transform:translateY(0); } }
+    .tool-box { width: min(900px,100%); padding: 28px; border-radius: 28px; background: var(--card); border: 1px solid var(--border); backdrop-filter: blur(14px); box-shadow: 0 25px 70px rgba(0,0,0,.18); }
+    .tool-box h2 { font-size: clamp(28px, 5vw, 42px); margin-bottom: 12px; }
+    .tool-box p { color: var(--muted); line-height: 1.7; margin-bottom: 20px; }
+    .time-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:16px; margin-top:20px; }
+    .lesson-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:16px; margin-top:20px; }
+    .lesson-card { padding:22px; border-radius:22px; background:var(--card); border:1px solid var(--border); cursor:pointer; text-align:left; transition:.3s; }
+    .lesson-card:hover { transform:translateY(-7px); box-shadow:0 18px 45px rgba(0,0,0,.18); }
+    .lesson-card h3 { margin-bottom:8px; }
+    .lesson-card p { color:var(--muted); font-size:14px; line-height:1.5; margin-bottom:0; }
+    .lesson-top { width:min(1020px,100%); margin-bottom:22px; text-align:center; }
+    .lesson-title { font-size:clamp(28px,5vw,54px); color:var(--testText); margin-bottom:8px; }
+    .lesson-help { color:var(--testMuted); font-size:18px; margin-bottom:18px; }
+    .keyboard {
+      width:min(780px,100%);
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      margin:20px auto 0;
+      align-items:center;
+    }
+    .key-row {
+      display:flex;
+      justify-content:center;
+      gap:6px;
+      flex-wrap:wrap;
+      width:100%;
+    }
+    .key {
+      min-width:42px;
+      padding:10px 8px;
+      border-radius:10px;
+      border:1px solid #d1d5db;
+      color:var(--testText);
+      background:rgba(148,163,184,.12);
+      font-weight:700;
+      font-size:14px;
+      text-align:center;
+      box-shadow:0 3px 0 rgba(148,163,184,.25);
+      transition:.2s;
+    }
+    .key.active { background:#38bdf8; color:white; transform:translateY(3px); box-shadow:0 1px 0 rgba(56,189,248,.45); }
+    .finger-guide { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; width:min(900px,100%); margin-top:18px; }
+    .finger-box { border:1px solid #e5e7eb; border-radius:14px; padding:12px; color:var(--testText); background:rgba(148,163,184,.08); font-size:14px; }
+    .lesson-progress { color:#38bdf8; font-weight:800; margin-top:12px; }
+    .hand-guide-wrap {
+      width:min(780px,100%);
+      margin:20px auto 0;
+      display:grid;
+      grid-template-columns:1fr;
+      gap:16px;
+      align-items:center;
+    }
+    .hand-card {
+      border:1px solid #e5e7eb;
+      border-radius:18px;
+      padding:16px;
+      background:rgba(148,163,184,.08);
+      width:100%;
+    }
+    .hand-card h3 {
+      color:var(--testText);
+      margin-bottom:14px;
+      text-align:center;
+    }
+    .finger-row {
+      display:grid;
+      grid-template-columns:repeat(5,minmax(55px,1fr));
+      gap:8px;
+      width:100%;
+    }
+    .finger {
+      min-height:72px;
+      border:1px solid #d1d5db;
+      border-radius:14px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:4px;
+      color:var(--testText);
+      background:rgba(255,255,255,.08);
+      transition:.25s;
+      font-size:11px;
+      text-align:center;
+      padding:8px 4px;
+    }
+    .finger b { font-size:16px; }
+    .finger.active {
+      background:#38bdf8;
+      color:white;
+      transform:translateY(-6px) scale(1.04);
+      box-shadow:0 12px 28px rgba(56,189,248,.35);
+      border-color:#38bdf8;
+    }
+    .next-key-box {
+      width:100%;
+      border:2px dashed #38bdf8;
+      border-radius:18px;
+      padding:14px;
+      text-align:center;
+      color:var(--testText);
+      background:rgba(56,189,248,.09);
+      font-size:16px;
+      margin-bottom:6px;
+    }
+    .next-key-box strong {
+      font-size:38px;
+      color:#38bdf8;
+      display:block;
+      line-height:1.1;
+    }
+    @media (max-width: 760px) {
+      .hand-guide-wrap { width:100%; }
+      .finger-row { grid-template-columns:repeat(5,1fr); gap:6px; }
+      .finger { min-height:58px; font-size:10px; }
+      .keyboard { width:100%; }
+      .key { min-width:34px; font-size:12px; padding:8px 6px; }
+    }
+
+    .typing-test-page.learning {
+      padding:22px 18px 210px;
+      overflow-y:auto;
+    }
+    .typing-test-page.learning .test-wrap {
+      justify-content:flex-start;
+      min-height:auto;
+      padding-top:22px;
+    }
+    .typing-test-page.learning .lesson-title {
+      font-size:clamp(28px,5vw,48px);
+    }
+    .typing-test-page.learning .lesson-help {
+      font-size:16px;
+      margin-bottom:12px;
+    }
+    .typing-test-page.learning .lesson-top {
+      margin-bottom:14px;
+    }
+    .typing-test-page.learning .type-box {
+      min-height:120px;
+      font-size:clamp(21px,2.6vw,27px);
+      line-height:1.65;
+      padding:22px 26px;
+    }
+    .typing-test-page.learning .keyboard {
+      margin-top:14px;
+    }
+    .typing-test-page.learning .finger-guide {
+      display:none;
+    }
+    .typing-test-page.learning .hand-guide-wrap {
+      position:fixed;
+      left:50%;
+      bottom:14px;
+      transform:translateX(-50%);
+      z-index:950;
+      width:min(940px,calc(100% - 28px));
+      grid-template-columns:220px 1fr 1fr;
+      gap:10px;
+      background:rgba(11,18,32,.92);
+      border:1px solid rgba(255,255,255,.16);
+      border-radius:22px;
+      padding:12px;
+      backdrop-filter:blur(18px);
+      box-shadow:0 18px 50px rgba(0,0,0,.35);
+    }
+    body.light .typing-test-page.learning .hand-guide-wrap {
+      background:rgba(255,255,255,.92);
+    }
+    .typing-test-page.learning .next-key-box {
+      margin:0;
+      padding:10px;
+      border-radius:16px;
+      font-size:13px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+    }
+    .typing-test-page.learning .next-key-box strong {
+      font-size:32px;
+    }
+    .typing-test-page.learning .hand-card {
+      padding:10px;
+      border-radius:16px;
+    }
+    .typing-test-page.learning .hand-card h3 {
+      font-size:15px;
+      margin-bottom:8px;
+    }
+    .typing-test-page.learning .finger {
+      min-height:54px;
+      font-size:9px;
+      border-radius:11px;
+      padding:5px 2px;
+    }
+    .typing-test-page.learning .finger b {
+      font-size:14px;
+    }
+    @media (max-width: 900px) {
+      .typing-test-page.learning { padding-bottom:360px; }
+      .typing-test-page.learning .hand-guide-wrap {
+        grid-template-columns:1fr;
+        max-height:330px;
+        overflow:auto;
+      }
+    }
+    .time-card { text-align:center; }
+    .time-card h3 { font-size:34px; }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 16px; }
+    .back-btn { background: white; color: #0f172a; }
+    .result { margin-top: 18px; background: rgba(0,0,0,.18); border-radius: 18px; padding: 18px; text-align: left; line-height: 1.7; color: var(--text); }
+    .badge { display: inline-block; padding: 8px 13px; border-radius: 999px; background: rgba(56,189,248,.18); border: 1px solid rgba(56,189,248,.3); margin-bottom: 15px; color: #38bdf8; }
+    .typing-test-page { display:none; min-height:100vh; background:var(--testBg); color:var(--testText); position:relative; z-index:2; padding:45px 18px; }
+    .test-wrap { max-width:1020px; margin:0 auto; min-height:calc(100vh - 90px); display:flex; flex-direction:column; align-items:center; justify-content:center; }
+    .big-timer { font-size:clamp(70px, 12vw, 120px); color:#d4d4d8; font-weight:800; margin-bottom:85px; line-height:1; }
+    .test-actions { position:absolute; top:26px; right:85px; display:flex; gap:22px; }
+    .icon-btn { background:transparent; color:#999; font-size:34px; padding:0; border-radius:0; box-shadow:none; }
+    .icon-btn:hover { transform:scale(1.08); box-shadow:none; }
+    .type-box {
+      width:min(1020px,100%);
+      min-height:160px;
+      border:2px solid #e5e7eb;
+      border-radius:14px;
+      padding:28px;
+      font-family:'Courier New', monospace;
+      font-size:clamp(22px, 3vw, 28px);
+      letter-spacing:3px;
+      line-height:1.8;
+      text-align:left;
+      overflow:hidden;
+      word-wrap:break-word;
+      white-space:normal;
+      display:block;
+    }
+    .word span { white-space:pre; }
+    .correct { color:#111827; }
+    body.dark .correct { color:#f8fafc; }
+    .wrong {
+      color:#ef4444;
+      background:rgba(239,68,68,.12);
+      border-radius:4px;
+      padding:2px 1px;
+    }
+    .pending { color:var(--testMuted); }
+    .caret {
+      border-left:2px solid #38bdf8;
+      animation:blink .7s infinite;
+      padding-left:2px;
+    }
+    .hidden-input { position:absolute; opacity:0; pointer-events:none; }
+    .test-result { display:none; }
+    .result-overlay {
+      display:none;
+      position:fixed;
+      inset:0;
+      z-index:1200;
+      background:rgba(2,6,23,.86);
+      backdrop-filter:blur(18px);
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+      text-align:center;
+    }
+    body.light .result-overlay { background:rgba(248,250,252,.88); }
+    .result-card {
+      width:min(760px,100%);
+      border:1px solid var(--border);
+      background:var(--card);
+      border-radius:34px;
+      padding:38px 26px;
+      box-shadow:0 30px 90px rgba(0,0,0,.32);
+      animation:popResult .7s ease both;
+      position:relative;
+      overflow:hidden;
+    }
+    @keyframes popResult { from{opacity:0; transform:scale(.88) translateY(25px)} to{opacity:1; transform:scale(1) translateY(0)} }
+    .tease-title { font-size:clamp(28px,6vw,54px); margin-bottom:12px; }
+    .tease-text { color:var(--muted); font-size:18px; margin-bottom:24px; }
+    .loader {
+      width:74px;
+      height:74px;
+      border-radius:50%;
+      border:7px solid rgba(56,189,248,.18);
+      border-top-color:#38bdf8;
+      margin:20px auto;
+      animation:spin 1s linear infinite;
+    }
+    @keyframes spin { to{transform:rotate(360deg)} }
+    .final-result { display:none; }
+    .praise { font-size:clamp(28px,6vw,50px); margin-bottom:10px; }
+    .praise-sub { color:var(--muted); font-size:18px; margin-bottom:26px; }
+    .party-stats {
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+      gap:14px;
+      margin:24px 0;
+    }
+    .party-stat {
+      border:1px solid var(--border);
+      border-radius:22px;
+      padding:22px;
+      background:rgba(255,255,255,.08);
+      animation:statBounce .8s ease both;
+    }
+    .party-stat strong {
+      display:block;
+      font-size:clamp(36px,7vw,58px);
+      color:#38bdf8;
+      line-height:1;
+      margin-bottom:8px;
+    }
+    @keyframes statBounce { 0%{transform:translateY(25px); opacity:0} 70%{transform:translateY(-8px); opacity:1} 100%{transform:translateY(0)} }
+    .confetti {
+      position:fixed;
+      top:-15px;
+      width:10px;
+      height:18px;
+      background:#38bdf8;
+      z-index:1300;
+      animation:fall 3.2s linear forwards;
+    }
+    @keyframes fall { to{transform:translateY(110vh) rotate(720deg); opacity:0} }
+    @media (max-width: 600px) {
+      .search-box { flex-direction: column; }
+      .tool-box { padding: 20px; }
+      .test-actions { right:30px; }
+      .type-box {
+        letter-spacing:1px;
+        font-size:20px;
+        padding:18px;
+        min-height:140px;
+      }
+      .big-timer { margin-bottom:45px; }
+    }
+  </style>
+</head>
+<body class="light">
+  <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">🌙</button>
+  <div class="stars"></div>
+  <div class="page-transition" id="transition"></div>
+
+  <main class="container" id="homePage">
+    <div class="logo">AI</div>
+    <h1>TypeFlow</h1>
+    <div class="typing-text"><span id="typedText"></span></div>
+    <div class="search-box">
+      <input id="userInput" type="text" placeholder="Try: speed test, learn typing, grammar help, text generator..." autofocus />
+      <button onclick="smartOpen()">Open</button>
+    </div>
+    <section class="options">
+      <div class="option-card" onclick="openTool('speed')"><h3>⚡ Typing Speed Test</h3><p>Choose time first, then start a clean Typwizz-style test.</p></div>
+      <div class="option-card" onclick="openTool('practice')"><h3>🎓 Learn Typing</h3><p>Start from home-row keys and learn typing step by step.</p></div>
+      <div class="option-card" onclick="openTool('generator')"><h3>🤖 Text Generator</h3><p>Create short practice text, captions, emails, and ideas.</p></div>
+      <div class="option-card" onclick="openTool('grammar')"><h3>✅ Grammar Helper</h3><p>Fix common mistakes and make your sentence cleaner.</p></div>
+    </section>
+  </main>
+
+  <section class="tool-page" id="toolPage">
+    <div class="tool-box">
+      <div class="badge" id="toolBadge">Tool</div>
+      <h2 id="toolTitle">Typing Speed Test</h2>
+      <p id="toolDesc">Choose a tool from the home page.</p>
+      <div id="toolContent"></div>
+      <div class="toolbar"><button class="back-btn" onclick="backHome()">← Back Home</button></div>
+    </div>
+  </section>
+
+  <section class="typing-test-page" id="typingTestPage">
+    <div class="test-actions">
+      <button class="icon-btn" onclick="restartCurrentTest()">↻</button>
+      <button class="icon-btn" onclick="backHome()">×</button>
+    </div>
+    <div class="test-wrap">
+      <div class="big-timer" id="bigTimer">60</div>
+      <div class="type-box" id="typeBox" onclick="focusTyping()"></div>
+      <input class="hidden-input" id="hiddenTyping" autocomplete="off" />
+      <div class="test-result" id="testResult"></div>
+    </div>
+  </section>
+
+  <section class="result-overlay" id="resultOverlay">
+    <div class="result-card">
+      <div id="teaseBox">
+        <h2 class="tease-title">Checking your speed...</h2>
+        <p class="tease-text" id="teaseText">Calculating your typing power</p>
+        <div class="loader"></div>
+      </div>
+
+      <div class="final-result" id="finalResultBox">
+        <h2 class="praise" id="praiseTitle">🎉 Excellent!</h2>
+        <p class="praise-sub" id="praiseSub">Your typing result is ready.</p>
+        <div class="party-stats">
+          <div class="party-stat"><strong id="finalWpm">0</strong>WPM</div>
+          <div class="party-stat"><strong id="finalAccuracy">0%</strong>Accuracy</div>
+          <div class="party-stat"><strong id="finalChars">0</strong>Chars</div>
+        </div>
+        <div class="toolbar">
+          <button onclick="startTypingTest(selectedTime)">Try Again</button>
+          <button class="back-btn" onclick="closeResultHome()">Home</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    const typedText = document.getElementById('typedText');
+    const introText = 'Master your typing speed, accuracy, and skills today.';
+    let introIndex = 0;
+    function typeEffect(){ if(introIndex < introText.length){ typedText.textContent += introText.charAt(introIndex++); setTimeout(typeEffect,65); } }
+    typeEffect();
+
+    const samples = [
+      'It is the fifth-largest park in the city, covering 843 acres. The park attracts thousands of visitors every year who enjoy walking, cycling, and outdoor activities in a peaceful environment.',
+
+      'Practice every day, and your typing speed will become faster and smoother. A focused mind and steady hands can help you build excellent typing skills over time.',
+
+      'Technology becomes more powerful when people learn to use it with confidence. Small steps every day can help you develop a strong and consistent typing habit.',
+
+      'Reading books regularly improves vocabulary, concentration, and communication skills. It also helps people explore new ideas and understand different perspectives.',
+
+      'Healthy habits such as regular exercise, proper sleep, and balanced meals can improve both physical and mental well-being. Small changes often create long-term results.'
+    ];
+    let selectedTime = 60, timeLeft = 60, timer = null, testStarted = false, testFinished = false, currentText = samples[0], isPracticeMode = false, testStartTime = 0, currentLessonName = 'Home Row';
+
+    const learnLessons = [
+      { name:'Lesson 1: Home Row Left', keys:'A S D F', help:'Learn left hand home row keys slowly and build finger memory.', text:'asdf asdf sad fad dad ask flask ads safe dads;' },
+
+      { name:'Lesson 2: Home Row Right', keys:'J K L ;', help:'Practice right hand home row keys carefully.', text:'jkl; jkl; all fall hall ask; flask all; jazz;' },
+
+      { name:'Lesson 3: Full Home Row', keys:'A S D F J K L ;', help:'Combine both hands on home row.', text:'asdf jkl; asdf jkl; sad flask ask dad fall; jazz hall;' },
+
+      { name:'Lesson 4: Top Row Left', keys:'Q W E R T', help:'Reach upward using left hand fingers.', text:'qwert qwert water tree wear rate write;' },
+
+      { name:'Lesson 5: Top Row Right', keys:'Y U I O P', help:'Practice right side top row keys.', text:'yuiop your you pour trip output puppy;' },
+
+      { name:'Lesson 6: Full Top Row', keys:'Q W E R T Y U I O P', help:'Combine full top row typing.', text:'power write your quiet type writer output quote;' },
+
+      { name:'Lesson 7: Bottom Row Left', keys:'Z X C V B', help:'Reach down with left hand.', text:'zxcvb cab buzz box civic vibe;' },
+
+      { name:'Lesson 8: Bottom Row Right', keys:'N M', help:'Practice right hand bottom row.', text:'nm nm moon name man mean noon;' },
+
+      { name:'Lesson 9: Full Bottom Row', keys:'Z X C V B N M', help:'Combine bottom row keys smoothly.', text:'zxcvbnm move cabin banana vacuum zoom;' },
+
+      { name:'Lesson 10: Capital Letters', keys:'Shift + Letters', help:'Learn using shift for capital letters.', text:'Apple Banana Delhi Keyboard Learning Speed Practice.' },
+
+      { name:'Lesson 11: Numbers', keys:'1 2 3 4 5 6 7 8 9 0', help:'Practice number row typing.', text:'12345 67890 2026 98765 45678 10001;' },
+
+      { name:'Lesson 12: Symbols', keys:'! @ # $ % & ?', help:'Learn common symbols.', text:'email@test.com #typing $100 & fun! wow?' },
+
+      { name:'Lesson 13: Common Words', keys:'All letters', help:'Type frequently used English words faster.', text:'the and have for not with you this that from what when where;' },
+
+      { name:'Lesson 14: Sentences', keys:'Words + punctuation', help:'Practice full proper sentences.', text:'Typing becomes easier when you practice every day with patience and focus.' },
+
+      { name:'Lesson 15: Paragraph Master', keys:'Everything', help:'Complete long paragraph challenge like real typing jobs.', text:'Success in typing comes from consistent daily practice, proper posture, correct finger placement, and staying calm while improving speed and accuracy over time.' },
+
+      { name:'Lesson 16: Email Typing', keys:'Real-world typing', help:'Practice professional email typing.', text:'Dear team, please find the attached report and let me know your feedback by tomorrow afternoon.' },
+
+      { name:'Lesson 17: Coding Practice', keys:'Letters + symbols', help:'Great for developers learning fast coding typing.', text:'function test(){ return true; } const user = typingSpeed;' },
+
+      { name:'Lesson 18: Speed Challenge', keys:'Advanced', help:'Fast random words challenge.', text:'quick rapid flash speed ninja rocket thunder keyboard challenge expert.' },
+
+      { name:'Lesson 19: Accuracy Challenge', keys:'Advanced', help:'Focus only on perfect accuracy.', text:'Accuracy matters more than speed when building long-term typing habits.' },
+
+      { name:'Lesson 20: Final Master Test', keys:'Everything', help:'Final complete typing course challenge.', text:'You have completed the typing course. Keep practicing regularly to become faster, more accurate, and more confident in real-world typing tasks.' }
+    ];
+
+    function toggleTheme(){
+      document.body.classList.toggle('light');
+      document.body.classList.toggle('dark');
+      document.getElementById('themeBtn').textContent = document.body.classList.contains('light') ? '🌙' : '☀️';
+    }
+    function animateSwitch(callback){ const t=document.getElementById('transition'); t.classList.add('active'); setTimeout(callback,430); setTimeout(()=>t.classList.remove('active'),820); }
+    function showTool(title, desc, badge, html){ animateSwitch(()=>{ homePage.style.display='none'; typingTestPage.style.display='none'; toolPage.style.display='flex'; toolTitle.textContent=title; toolDesc.textContent=desc; toolBadge.textContent=badge; toolContent.innerHTML=html; }); }
+    function openTool(type){ if(type==='speed') openSpeedSetup(); if(type==='practice') openPractice(); if(type==='generator') openGenerator(); if(type==='grammar') openGrammar(); }
+    function smartOpen(){
+      const q=userInput.value.toLowerCase();
+      if(q.includes('grammar')||q.includes('fix')) return openGrammar();
+      if(q.includes('generate')||q.includes('caption')||q.includes('email')) return openGenerator();
+      if(q.includes('practice')||q.includes('lesson')||q.includes('learn')) return openPractice();
+      return openSpeedSetup();
+    }
+
+    function openSpeedSetup(){
+      showTool('Choose Test Time', 'How long would you like your typing test to be?', 'Speed Test', `
+        <div class="time-grid">
+          <div class="time-card" onclick="startTypingTest(15)"><h3>15s</h3><p>Quick warmup</p></div>
+          <div class="time-card" onclick="startTypingTest(30)"><h3>30s</h3><p>Short test</p></div>
+          <div class="time-card" onclick="startTypingTest(60)"><h3>60s</h3><p>Standard test</p></div>
+          <div class="time-card" onclick="startTypingTest(120)"><h3>120s</h3><p>Long challenge</p></div>
+        </div>
+      `);
+    }
+
+    function startTypingTest(seconds){
+      isPracticeMode = false;
+      selectedTime = seconds || 60;
+      timeLeft = selectedTime;
+      testStarted = false;
+      testFinished = false;
+      clearInterval(timer);
+      resultOverlay.style.display = 'none';
+      teaseBox.style.display = 'block';
+      finalResultBox.style.display = 'none';
+      currentText = samples[Math.floor(Math.random()*samples.length)];
+      animateSwitch(()=>{
+        homePage.style.display='none';
+        toolPage.style.display='none';
+        typingTestPage.classList.remove('learning');
+        typingTestPage.style.display='block';
+        bigTimer.style.display = 'block';
+        bigTimer.textContent = timeLeft;
+        hiddenTyping.value = '';
+        testResult.style.display = 'none';
+        renderText('');
+        focusTyping();
+      });
+    }
+
+    function focusTyping(){ hiddenTyping.focus(); }
+    function renderText(typed){
+      let html = '';
+
+      for(let i=0;i<currentText.length;i++){
+        let cls = 'pending';
+
+        if(i < typed.length){
+          cls = typed[i] === currentText[i] ? 'correct' : 'wrong';
+        }
+
+        const isCaret = i === typed.length;
+        const char = currentText[i] === ' ' ? '&nbsp;' : currentText[i];
+
+        html += `<span class="${cls}${isCaret ? ' caret' : ''}">${char}</span>`;
+      }
+
+      typeBox.innerHTML = html;
+      typeBox.scrollTop = typeBox.scrollHeight;
+    }
+    hiddenTyping.addEventListener('input', ()=>{
+      if(typingTestPage.style.display !== 'block') return;
+      if(!testStarted){
+        testStarted = true;
+        testStartTime = Date.now();
+
+        if(isPracticeMode){
+          // No timer in Learn Typing mode
+        } else {
+          timer = setInterval(()=>{
+            timeLeft--;
+            bigTimer.textContent = timeLeft;
+            if(timeLeft <= 0) finishTypingTest();
+          },1000);
+        }
+      }
+      if(hiddenTyping.value.length > currentText.length) hiddenTyping.value = hiddenTyping.value.slice(0,currentText.length);
+      if(isPracticeMode){
+        const lesson = learnLessons.find(item => item.name === currentLessonName) || learnLessons[0];
+        renderLearnLayout(lesson, hiddenTyping.value);
+      } else {
+        renderText(hiddenTyping.value);
+      }
+      if(hiddenTyping.value.length >= currentText.length) finishTypingTest();
+    });
+    document.addEventListener('keydown', ()=>{
+      if(typingTestPage.style.display === 'block') focusTyping();
+    });
+
+    function finishTypingTest(){
+      if(testFinished) return;
+      testFinished = true;
+      clearInterval(timer);
+      const typed = hiddenTyping.value;
+      hiddenTyping.blur();
+
+      let correct = 0;
+      for(let i=0;i<typed.length;i++) if(typed[i] === currentText[i]) correct++;
+
+      const usedSeconds = isPracticeMode ? Math.max(Math.floor((Date.now() - testStartTime) / 1000), 1) : Math.max(selectedTime - timeLeft, 1);
+      const wpm = Math.round((correct / 5) / (usedSeconds / 60));
+      const acc = typed.length ? Math.round((correct / typed.length) * 100) : 0;
+
+      resultOverlay.style.display = 'flex';
+      teaseBox.style.display = 'block';
+      finalResultBox.style.display = 'none';
+
+      const teaseLines = [
+        'Calculating your typing power...',
+        'Counting every correct key...',
+        'Preparing your final score...',
+        'Almost ready...'
+      ];
+      let teaseIndex = 0;
+      teaseText.textContent = teaseLines[0];
+      const teaseTimer = setInterval(()=>{
+        teaseIndex++;
+        teaseText.textContent = teaseLines[teaseIndex] || teaseLines[teaseLines.length - 1];
+      },1000);
+
+      setTimeout(()=>{
+        clearInterval(teaseTimer);
+        finalWpm.textContent = wpm;
+        finalAccuracy.textContent = acc + '%';
+        finalChars.textContent = typed.length;
+
+        if(isPracticeMode){
+          praiseTitle.textContent = '🌟 Lesson Complete!';
+          praiseSub.textContent = 'Great work! You completed ' + currentLessonName + '. Keep learning step by step.';
+        } else if(wpm >= 60) {
+          praiseTitle.textContent = '🚀 Amazing Speed!';
+          praiseSub.textContent = 'You are typing like a pro. Keep the streak going!';
+        } else if(wpm >= 35) {
+          praiseTitle.textContent = '🎉 Great Job!';
+          praiseSub.textContent = 'Your typing speed is strong. A little more practice will make it even better!';
+        } else {
+          praiseTitle.textContent = '👏 Nice Start!';
+          praiseSub.textContent = 'Keep practicing daily and your speed will improve quickly.';
+        }
+
+        teaseBox.style.display = 'none';
+        finalResultBox.style.display = 'block';
+        launchConfetti();
+      },4000);
+    }
+
+    function launchConfetti(){
+      const colors = ['#38bdf8','#8b5cf6','#ec4899','#22c55e','#facc15','#fb7185'];
+      for(let i=0;i<90;i++){
+        const piece = document.createElement('div');
+        piece.className = 'confetti';
+        piece.style.left = Math.random() * 100 + 'vw';
+        piece.style.background = colors[Math.floor(Math.random()*colors.length)];
+        piece.style.animationDelay = Math.random() * .8 + 's';
+        piece.style.transform = `rotate(${Math.random()*360}deg)`;
+        document.body.appendChild(piece);
+        setTimeout(()=>piece.remove(),3800);
+      }
+    }
+
+    function closeResultHome(){
+      resultOverlay.style.display = 'none';
+      backHome();
+    }
+
+    function openPractice(){
+      showTool('Learn Typing', 'Choose a lesson and learn typing in a systematic way.', 'Beginner Course', `
+        <div class="lesson-grid">
+          ${learnLessons.map((lesson, index) => `
+            <div class="lesson-card" onclick="startLearnLesson(${index})">
+              <h3>${lesson.name}</h3>
+              <p><b>Keys:</b> ${lesson.keys}</p>
+              <p>${lesson.help}</p>
+            </div>
+          `).join('')}
+        </div>
+      `);
+    }
+
+    function startLearnLesson(index){
+      const lesson = learnLessons[index] || learnLessons[0];
+      currentLessonName = lesson.name;
+      isPracticeMode = true;
+      selectedTime = 0;
+      timeLeft = 0;
+      testStarted = false;
+      testFinished = false;
+      clearInterval(timer);
+      resultOverlay.style.display = 'none';
+      teaseBox.style.display = 'block';
+      finalResultBox.style.display = 'none';
+      currentText = lesson.text;
+
+      animateSwitch(()=>{
+        homePage.style.display='none';
+        toolPage.style.display='none';
+        typingTestPage.classList.add('learning');
+        typingTestPage.style.display='block';
+        bigTimer.style.display = 'none';
+        hiddenTyping.value = '';
+        testResult.style.display = 'none';
+        renderLearnLayout(lesson, '');
+        focusTyping();
+      });
+    }
+
+    function renderLearnLayout(lesson, typed){
+      const progress = Math.round((typed.length / currentText.length) * 100) || 0;
+      typeBox.insertAdjacentHTML('beforebegin', '');
+      // remove old learning UI before creating new one
+      document.querySelectorAll('.lesson-top, .keyboard, .finger-guide, .hand-guide-wrap').forEach(el => el.remove());
+      const lessonTop = document.createElement('div');
+      lessonTop.className = 'lesson-top';
+      lessonTop.innerHTML = `<h2 class="lesson-title">${lesson.name}</h2><p class="lesson-help">${lesson.help}</p><div class="lesson-progress">Progress: ${progress}%</div>`;
+      typeBox.parentNode.insertBefore(lessonTop, typeBox);
+      renderText(typed);
+      const keyboard = document.createElement('div');
+      keyboard.className = 'keyboard';
+      keyboard.innerHTML = buildKeyboard(typed);
+      typeBox.parentNode.insertBefore(keyboard, typeBox.nextSibling);
+      const guide = document.createElement('div');
+      guide.className = 'finger-guide';
+      guide.innerHTML = '<div class="finger-box">Left hand: A S D F</div><div class="finger-box">Right hand: J K L ;</div><div class="finger-box">Thumbs: Space bar</div><div class="finger-box">Tip: Follow the highlighted finger for each key.</div>';
+      keyboard.parentNode.insertBefore(guide, keyboard.nextSibling);
+
+      const handWrap = document.createElement('div');
+      handWrap.className = 'hand-guide-wrap';
+      handWrap.innerHTML = buildFingerGuide(typed);
+      guide.parentNode.insertBefore(handWrap, guide.nextSibling);
+    }
+
+    function getFingerInfo(typed){
+      const nextChar = (currentText[typed.length] || '').toLowerCase();
+      const map = {
+        'q':['left','pinky','Left Pinky'], 'a':['left','pinky','Left Pinky'], 'z':['left','pinky','Left Pinky'],
+        'w':['left','ring','Left Ring'], 's':['left','ring','Left Ring'], 'x':['left','ring','Left Ring'],
+        'e':['left','middle','Left Middle'], 'd':['left','middle','Left Middle'], 'c':['left','middle','Left Middle'],
+        'r':['left','index','Left Index'], 'f':['left','index','Left Index'], 'v':['left','index','Left Index'], 't':['left','index','Left Index'], 'g':['left','index','Left Index'], 'b':['left','index','Left Index'],
+        'y':['right','index','Right Index'], 'h':['right','index','Right Index'], 'n':['right','index','Right Index'], 'u':['right','index','Right Index'], 'j':['right','index','Right Index'], 'm':['right','index','Right Index'],
+        'i':['right','middle','Right Middle'], 'k':['right','middle','Right Middle'],
+        'o':['right','ring','Right Ring'], 'l':['right','ring','Right Ring'],
+        'p':['right','pinky','Right Pinky'], ';':['right','pinky','Right Pinky'],
+        ' ':['both','thumb','Thumb / Space']
+      };
+      return { key: nextChar === ' ' ? 'SPACE' : (nextChar || 'DONE').toUpperCase(), data: map[nextChar] || ['both','thumb','Thumb / Space'] };
+    }
+
+    function buildFingerGuide(typed){
+      const info = getFingerInfo(typed);
+      const side = info.data[0];
+      const finger = info.data[1];
+      const name = info.data[2];
+
+      function active(hand, f){ return (side === hand && finger === f) || (finger === 'thumb' && f === 'thumb') ? 'active' : ''; }
+
+      return `
+        <div class="next-key-box">
+          Next key to press
+          <strong>${info.key}</strong>
+          Use: ${name}
+        </div>
+
+        <div class="hand-card">
+          <h3>Left Hand</h3>
+          <div class="finger-row">
+            <div class="finger ${active('left','pinky')}"><b>A</b><span>Pinky<br>Q A Z</span></div>
+            <div class="finger ${active('left','ring')}"><b>S</b><span>Ring<br>W S X</span></div>
+            <div class="finger ${active('left','middle')}"><b>D</b><span>Middle<br>E D C</span></div>
+            <div class="finger ${active('left','index')}"><b>F</b><span>Index<br>R T F G V B</span></div>
+            <div class="finger ${active('both','thumb')}"><b>␣</b><span>Thumb<br>Space</span></div>
+          </div>
+        </div>
+
+        <div class="hand-card">
+          <h3>Right Hand</h3>
+          <div class="finger-row">
+            <div class="finger ${active('both','thumb')}"><b>␣</b><span>Thumb<br>Space</span></div>
+            <div class="finger ${active('right','index')}"><b>J</b><span>Index<br>Y U H J N M</span></div>
+            <div class="finger ${active('right','middle')}"><b>K</b><span>Middle<br>I K</span></div>
+            <div class="finger ${active('right','ring')}"><b>L</b><span>Ring<br>O L</span></div>
+            <div class="finger ${active('right','pinky')}"><b>;</b><span>Pinky<br>P ;</span></div>
+          </div>
+        </div>
+      `;
+    }
+
+    function buildKeyboard(typed){
+      const nextChar = (currentText[typed.length] || '').toUpperCase();
+      const rows = ['QWERTYUIOP','ASDFGHJKL;','ZXCVBNM'];
+      return rows.map(row => `<div class="key-row">${row.split('').map(k => `<div class="key ${nextChar === k ? 'active' : ''}">${k}</div>`).join('')}</div>`).join('') + `<div class="key-row"><div class="key ${nextChar === ' ' ? 'active' : ''}" style="min-width:260px">SPACE</div></div>`;
+    }
+
+    function startTypingPractice(){ startLearnLesson(0); }
+
+    function restartCurrentTest(){
+      if(isPracticeMode) startTypingPractice();
+      else startTypingTest(selectedTime);
+    }
+    function openGenerator(){ showTool('Text Generator','Generate fun text for typing practice.','Fun Generator',`<div class="search-box"><input id="topicInput" placeholder="Enter topic: cricket, school, technology..."><button onclick="generateText()">Generate</button></div><div class="result" id="generatedText">Your generated text will appear here.</div>`); }
+    function generateText(){ const topic=topicInput.value.trim()||'typing practice'; generatedText.textContent=`Today I am practicing typing about ${topic}. I will stay focused, keep my fingers steady, and improve my speed one sentence at a time. Every small practice session makes me better.`; }
+    function openGrammar(){ showTool('Grammar Helper','Paste your sentence and get a cleaner version.','Helper Tool',`<textarea id="grammarInput" rows="5" placeholder="Type your sentence here..."></textarea><div class="toolbar"><button onclick="fixGrammar()">Fix Text</button></div><div class="result" id="grammarResult">Corrected text will appear here.</div>`); }
+    function fixGrammar(){ let text=grammarInput.value.trim(); if(!text) text='Please type something first.'; text=text.replace(/\bi\b/g,'I').replace(/\bim\b/gi,"I'm").replace(/\bdont\b/gi,"don't").replace(/\bcant\b/gi,"can't").replace(/\s+/g,' '); text=text.charAt(0).toUpperCase()+text.slice(1); if(!/[.!?]$/.test(text)) text+='.'; grammarResult.textContent=text; }
+    function backHome(){ 
+      clearInterval(timer); 
+      resultOverlay.style.display='none';
+      bigTimer.style.display = 'block';
+      animateSwitch(()=>{ 
+        typingTestPage.classList.remove('learning');
+        typingTestPage.style.display='none'; 
+        toolPage.style.display='none'; 
+        homePage.style.display='flex'; 
+      }); 
+    }
+    userInput.addEventListener('keydown', e=>{ if(e.key==='Enter') smartOpen(); });
+  </script>
+</body>
+</html>
