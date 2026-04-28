@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TypeFlow - Learn & Test Typing</title>
+  <title>Typing AI Fun Website</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
     :root { --bg1:#243b55; --bg2:#0f172a; --bg3:#020617; --text:#ffffff; --muted:#cbd5e1; --card:rgba(255,255,255,.1); --border:rgba(255,255,255,.18); --input:rgba(255,255,255,.08); --testBg:#ffffff; --testText:#111827; --testMuted:#b8bcc4; }
@@ -22,8 +22,7 @@
     .typing-text { font-size: clamp(17px, 3vw, 24px); color: var(--muted); min-height: 34px; margin-bottom: 30px; }
     .typing-text span { border-right: 2px solid #38bdf8; padding-right: 5px; animation: blink .7s infinite; }
     @keyframes blink { 50% { border-color: transparent; } }
-    .search-box { width: min(720px,100%); background: var(--card); backdrop-filter: blur(14px); border: 1px solid var(--border); border-radius: 24px; padding: 16px; display: flex; gap: 12px; box-shadow: 0 25px 70px rgba(0,0,0,.18); margin-bottom: 18px; }
-    
+    .search-box { width: min(720px,100%); background: var(--card); backdrop-filter: blur(14px); border: 1px solid var(--border); border-radius: 24px; padding: 16px; display: flex; gap: 12px; box-shadow: 0 25px 70px rgba(0,0,0,.18); margin-bottom: 26px; }
     .search-box input, textarea { flex: 1; background: var(--input); border: 1px solid var(--border); outline: none; color: var(--text); font-size: 17px; padding: 14px; border-radius: 16px; resize: vertical; }
     .search-box input::placeholder, textarea::placeholder { color: #94a3b8; }
     button { border: none; border-radius: 16px; padding: 13px 20px; background: linear-gradient(135deg, #38bdf8, #8b5cf6); color: white; font-weight: bold; cursor: pointer; transition: .3s; }
@@ -266,20 +265,29 @@
       line-height:1.8;
       text-align:left;
       overflow:hidden;
-      word-wrap:break-word;
+      overflow-wrap:normal;
+      word-break:normal;
       white-space:normal;
       display:block;
     }
+    .word {
+      display:inline-block;
+      white-space:nowrap;
+      break-inside:avoid;
+      page-break-inside:avoid;
+    }
     .word span { white-space:pre; }
-    .correct { color:#111827; }
-    body.dark .correct { color:#f8fafc; }
+    .type-box span { white-space:pre; }
+    .correct { color:#b8bcc4; }
+    body.dark .correct { color:#64748b; }
+    .pending { color:#111827; }
+    body.dark .pending { color:#e5e7eb; }
     .wrong {
       color:#ef4444;
-      background:rgba(239,68,68,.12);
+      background:rgba(239,68,68,.18);
       border-radius:4px;
       padding:2px 1px;
     }
-    .pending { color:var(--testMuted); }
     .caret {
       border-left:2px solid #38bdf8;
       animation:blink .7s infinite;
@@ -379,11 +387,11 @@
 
   <main class="container" id="homePage">
     <div class="logo">AI</div>
-    <h1>TypeFlow</h1>
+    <h1>Type Flow</h1>
     <div class="typing-text"><span id="typedText"></span></div>
     <div class="search-box">
-      <input id="userInput" type="text" placeholder="Try: speed test, learn typing, grammar help, text generator..." autofocus />
-      <button onclick="smartOpen()">Open</button>
+      <input id="userInput" type="text" placeholder="Ask: How may I help you? Try: speed test, grammar, practice..." />
+      <button onclick="smartOpen()">Send</button>
     </div>
     <section class="options">
       <div class="option-card" onclick="openTool('speed')"><h3>⚡ Typing Speed Test</h3><p>Choose time first, then start a clean Typwizz-style test.</p></div>
@@ -440,25 +448,18 @@
     </div>
   </section>
 
+  <script src="paragraphs.js"></script>
   <script>
     const typedText = document.getElementById('typedText');
-    const introText = 'Master your typing speed, accuracy, and skills today.';
+    const introText = 'How may I help you improve your typing today?';
     let introIndex = 0;
     function typeEffect(){ if(introIndex < introText.length){ typedText.textContent += introText.charAt(introIndex++); setTimeout(typeEffect,65); } }
     typeEffect();
 
-    const samples = [
-      'It is the fifth-largest park in the city, covering 843 acres. The park attracts thousands of visitors every year who enjoy walking, cycling, and outdoor activities in a peaceful environment.',
-
-      'Practice every day, and your typing speed will become faster and smoother. A focused mind and steady hands can help you build excellent typing skills over time.',
-
-      'Technology becomes more powerful when people learn to use it with confidence. Small steps every day can help you develop a strong and consistent typing habit.',
-
-      'Reading books regularly improves vocabulary, concentration, and communication skills. It also helps people explore new ideas and understand different perspectives.',
-
-      'Healthy habits such as regular exercise, proper sleep, and balanced meals can improve both physical and mental well-being. Small changes often create long-term results.'
+    const samples = window.typingParagraphs || [
+      'Practice every day, and your typing speed will become faster and smoother. A focused mind and steady hands can help you build excellent typing skills over time.'
     ];
-    let selectedTime = 60, timeLeft = 60, timer = null, testStarted = false, testFinished = false, currentText = samples[0], isPracticeMode = false, testStartTime = 0, currentLessonName = 'Home Row';
+    let selectedTime = 60, timeLeft = 60, timer = null, testStarted = false, testFinished = false, currentText = samples[0], isPracticeMode = false, testStartTime = 0, currentLessonName = 'Home Row', lastParagraphIndex = -1;
 
     const learnLessons = [
       { name:'Lesson 1: Home Row Left', keys:'A S D F', help:'Learn left hand home row keys slowly and build finger memory.', text:'asdf asdf sad fad dad ask flask ads safe dads;' },
@@ -510,13 +511,7 @@
     function animateSwitch(callback){ const t=document.getElementById('transition'); t.classList.add('active'); setTimeout(callback,430); setTimeout(()=>t.classList.remove('active'),820); }
     function showTool(title, desc, badge, html){ animateSwitch(()=>{ homePage.style.display='none'; typingTestPage.style.display='none'; toolPage.style.display='flex'; toolTitle.textContent=title; toolDesc.textContent=desc; toolBadge.textContent=badge; toolContent.innerHTML=html; }); }
     function openTool(type){ if(type==='speed') openSpeedSetup(); if(type==='practice') openPractice(); if(type==='generator') openGenerator(); if(type==='grammar') openGrammar(); }
-    function smartOpen(){
-      const q=userInput.value.toLowerCase();
-      if(q.includes('grammar')||q.includes('fix')) return openGrammar();
-      if(q.includes('generate')||q.includes('caption')||q.includes('email')) return openGenerator();
-      if(q.includes('practice')||q.includes('lesson')||q.includes('learn')) return openPractice();
-      return openSpeedSetup();
-    }
+    function smartOpen(){ const q=userInput.value.toLowerCase(); if(q.includes('grammar')||q.includes('fix')) return openGrammar(); if(q.includes('generate')||q.includes('caption')||q.includes('email')) return openGenerator(); if(q.includes('practice')||q.includes('lesson')||q.includes('learn')) return openPractice(); return openSpeedSetup(); }
 
     function openSpeedSetup(){
       showTool('Choose Test Time', 'How long would you like your typing test to be?', 'Speed Test', `
@@ -539,7 +534,7 @@
       resultOverlay.style.display = 'none';
       teaseBox.style.display = 'block';
       finalResultBox.style.display = 'none';
-      currentText = samples[Math.floor(Math.random()*samples.length)];
+      currentText = getRandomParagraph();
       animateSwitch(()=>{
         homePage.style.display='none';
         toolPage.style.display='none';
@@ -548,6 +543,7 @@
         bigTimer.style.display = 'block';
         bigTimer.textContent = timeLeft;
         hiddenTyping.value = '';
+        lastTypedValue = '';
         testResult.style.display = 'none';
         renderText('');
         focusTyping();
@@ -555,28 +551,102 @@
     }
 
     function focusTyping(){ hiddenTyping.focus(); }
+
+    function getRandomParagraph(){
+      if(!samples.length) return '';
+      let index = Math.floor(Math.random() * samples.length);
+      if(samples.length > 1 && index === lastParagraphIndex){
+        index = (index + 1) % samples.length;
+      }
+      lastParagraphIndex = index;
+      return samples[index];
+    }
+
+    function addMoreParagraph(){
+      const next = getRandomParagraph();
+      if(!next) return;
+      currentText += ' ' + next;
+    }
+    function escapeHtml(char){
+      return char
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
     function renderText(typed){
       let html = '';
+      let i = 0;
 
-      for(let i=0;i<currentText.length;i++){
-        let cls = 'pending';
+      while(i < currentText.length){
+        let wordHtml = '<span class="word">';
 
-        if(i < typed.length){
-          cls = typed[i] === currentText[i] ? 'correct' : 'wrong';
+        // Keep each full word together so no word appears half on the next line.
+        while(i < currentText.length && currentText[i] !== ' '){
+          let cls = 'pending';
+          if(i < typed.length){
+            cls = typed[i] === currentText[i] ? 'correct' : 'wrong';
+          }
+          const isCaret = i === typed.length;
+          wordHtml += `<span class="${cls}${isCaret ? ' caret' : ''}">${escapeHtml(currentText[i])}</span>`;
+          i++;
         }
 
-        const isCaret = i === typed.length;
-        const char = currentText[i] === ' ' ? '&nbsp;' : currentText[i];
+        // Add following spaces after the word, still inside the same no-break word block.
+        while(i < currentText.length && currentText[i] === ' '){
+          let cls = 'pending';
+          if(i < typed.length){
+            cls = typed[i] === currentText[i] ? 'correct' : 'wrong';
+          }
+          const isCaret = i === typed.length;
+          wordHtml += `<span class="${cls}${isCaret ? ' caret' : ''}">&nbsp;</span>`;
+          i++;
+        }
 
-        html += `<span class="${cls}${isCaret ? ' caret' : ''}">${char}</span>`;
+        wordHtml += '</span>';
+        html += wordHtml;
+      }
+
+      if(typed.length === currentText.length){
+        html += '<span class="caret"></span>';
       }
 
       typeBox.innerHTML = html;
       typeBox.scrollTop = typeBox.scrollHeight;
     }
+    let lastTypedValue = '';
+
+    function firstWrongIndex(text){
+      for(let i = 0; i < text.length; i++){
+        if(text[i] !== currentText[i]) return i;
+      }
+      return -1;
+    }
+
     hiddenTyping.addEventListener('input', ()=>{
       if(typingTestPage.style.display !== 'block') return;
-      if(!testStarted){
+
+      if(hiddenTyping.value.length > currentText.length){
+        if(isPracticeMode){
+          hiddenTyping.value = hiddenTyping.value.slice(0,currentText.length);
+        } else {
+          while(hiddenTyping.value.length > currentText.length){
+            addMoreParagraph();
+          }
+        }
+      }
+
+      const wrongAt = firstWrongIndex(hiddenTyping.value);
+
+      // Stop typing forward after one wrong key.
+      // User must press Backspace/Delete and type the correct key before moving ahead.
+      if(wrongAt !== -1 && hiddenTyping.value.length > wrongAt + 1){
+        hiddenTyping.value = hiddenTyping.value.slice(0, wrongAt + 1);
+      }
+
+      if(!testStarted && hiddenTyping.value.length > 0){
         testStarted = true;
         testStartTime = Date.now();
 
@@ -590,18 +660,27 @@
           },1000);
         }
       }
-      if(hiddenTyping.value.length > currentText.length) hiddenTyping.value = hiddenTyping.value.slice(0,currentText.length);
+
+      lastTypedValue = hiddenTyping.value;
+
       if(isPracticeMode){
         const lesson = learnLessons.find(item => item.name === currentLessonName) || learnLessons[0];
         renderLearnLayout(lesson, hiddenTyping.value);
       } else {
         renderText(hiddenTyping.value);
       }
-      if(hiddenTyping.value.length >= currentText.length) finishTypingTest();
+
+      const hasWrong = firstWrongIndex(hiddenTyping.value) !== -1;
+      if(!hasWrong && hiddenTyping.value.length >= currentText.length){
+        if(isPracticeMode){
+          finishTypingTest();
+        } else {
+          addMoreParagraph();
+          renderText(hiddenTyping.value);
+        }
+      }
     });
-    document.addEventListener('keydown', ()=>{
-      if(typingTestPage.style.display === 'block') focusTyping();
-    });
+    document.addEventListener('keydown', ()=>{ if(typingTestPage.style.display === 'block') focusTyping(); });
 
     function finishTypingTest(){
       if(testFinished) return;
@@ -714,6 +793,7 @@
         typingTestPage.style.display='block';
         bigTimer.style.display = 'none';
         hiddenTyping.value = '';
+        lastTypedValue = '';
         testResult.style.display = 'none';
         renderLearnLayout(lesson, '');
         focusTyping();
