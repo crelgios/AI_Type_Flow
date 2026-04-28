@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://crelgios.github.io/AI_Type_Flow/sitemap.xml
