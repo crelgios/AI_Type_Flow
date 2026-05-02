@@ -387,7 +387,7 @@
 
   <main class="container" id="homePage">
     <div class="logo">AI</div>
-    <h1>Type Flow</h1>
+    <h1>Typing AI</h1>
     <div class="typing-text"><span id="typedText"></span></div>
     <div class="search-box">
       <input id="userInput" type="text" placeholder="Ask: How may I help you? Try: speed test, grammar, practice..." />
@@ -457,31 +457,7 @@
     typeEffect();
 
     const samples = window.typingParagraphs || [
-      "Learning new skills becomes easier when you stay consistent and practice with patience. Small improvements every day can create big results over time.",
-"Traveling to new places helps people understand different cultures, foods, and traditions. Every journey creates memories that last for years.",
-"Technology continues to change the way people communicate, learn, and work. Innovation makes daily life faster and more convenient.",
-"Students who manage their time properly often perform better in exams and reduce unnecessary stress during their studies.",
-"Exercise keeps the body healthy and improves mental focus. Even a short daily walk can boost energy and confidence.",
-"Reading newspapers helps people stay informed about world events, politics, sports, and technology updates happening every day.",
-"Good communication skills help people build stronger relationships in both personal and professional life.",
-"Nature provides peace and beauty through mountains, rivers, forests, and wildlife. Protecting nature is everyone’s responsibility.",
-"Music has the power to improve mood and reduce stress. Many people enjoy listening to songs while working or relaxing.",
-"Saving money regularly helps people prepare for future emergencies and achieve long-term financial goals.",
-"Learning programming can open many career opportunities in software development, web design, and artificial intelligence.",
-"Healthy eating habits improve concentration, strengthen the immune system, and help maintain physical fitness.",
-"Sports teach teamwork, discipline, and dedication. Playing regularly also improves physical health and confidence.",
-"Books can transport readers into different worlds filled with adventure, mystery, and valuable life lessons.",
-"Time management is an important skill for students and professionals who want to complete tasks efficiently.",
-"Typing quickly with high accuracy can improve productivity in office work, studies, and online communication.",
-"The internet connects billions of people around the world and provides instant access to information and entertainment.",
-"Hard work combined with smart planning often leads people toward success in their careers and personal goals.",
-"Space exploration helps scientists discover new planets, understand galaxies, and learn more about the universe.",
-"Daily meditation helps people stay calm, improve focus, and reduce stress in busy lifestyles.",
-"Creative thinking allows people to solve problems in unique ways and develop innovative ideas.",
-"Public speaking becomes easier when people practice regularly and build confidence over time.",
-"Morning routines help people stay organized and productive throughout the entire day.",
-"Learning foreign languages can create new career opportunities and help people connect with different cultures.",
-"Teamwork allows people to achieve bigger goals by combining different skills and strengths."
+      'Practice every day, and your typing speed will become faster and smoother. A focused mind and steady hands can help you build excellent typing skills over time.'
     ];
     let selectedTime = 60, timeLeft = 60, timer = null, testStarted = false, testFinished = false, currentText = samples[0], isPracticeMode = false, testStartTime = 0, currentLessonName = 'Home Row', lastParagraphIndex = -1;
 
@@ -568,6 +544,9 @@
         bigTimer.textContent = timeLeft;
         hiddenTyping.value = '';
         lastTypedValue = '';
+        errorCount = 0;
+        totalKeystrokes = 0;
+        correctKeystrokes = 0;
         testResult.style.display = 'none';
         renderText('');
         focusTyping();
@@ -641,6 +620,9 @@
       typeBox.scrollTop = typeBox.scrollHeight;
     }
     let lastTypedValue = '';
+    let errorCount = 0;
+    let totalKeystrokes = 0;
+    let correctKeystrokes = 0;
 
     function firstWrongIndex(text){
       for(let i = 0; i < text.length; i++){
@@ -663,6 +645,18 @@
       }
 
       const wrongAt = firstWrongIndex(hiddenTyping.value);
+
+      // Real accuracy: count every new typed key, even if user later fixes it.
+      const isTypingForward = hiddenTyping.value.length > lastTypedValue.length;
+      if(isTypingForward){
+        totalKeystrokes++;
+        const typedIndex = hiddenTyping.value.length - 1;
+        if(hiddenTyping.value[typedIndex] === currentText[typedIndex]){
+          correctKeystrokes++;
+        } else {
+          errorCount++;
+        }
+      }
 
       // Stop typing forward after one wrong key.
       // User must press Backspace/Delete and type the correct key before moving ahead.
@@ -718,7 +712,7 @@
 
       const usedSeconds = isPracticeMode ? Math.max(Math.floor((Date.now() - testStartTime) / 1000), 1) : Math.max(selectedTime - timeLeft, 1);
       const wpm = Math.round((correct / 5) / (usedSeconds / 60));
-      const acc = typed.length ? Math.round((correct / typed.length) * 100) : 0;
+      const acc = totalKeystrokes ? Math.max(0, Math.round((correctKeystrokes / totalKeystrokes) * 100)) : 0;
 
       resultOverlay.style.display = 'flex';
       teaseBox.style.display = 'block';
@@ -818,6 +812,9 @@
         bigTimer.style.display = 'none';
         hiddenTyping.value = '';
         lastTypedValue = '';
+        errorCount = 0;
+        totalKeystrokes = 0;
+        correctKeystrokes = 0;
         testResult.style.display = 'none';
         renderLearnLayout(lesson, '');
         focusTyping();
